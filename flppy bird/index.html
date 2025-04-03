@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Bird - Easy Mode</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #87CEEB; /* Sky blue background */
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background: #fff;
+            margin: auto;
+            position: absolute;
+            top: 0; bottom: 0; left: 0; right: 0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Bird properties
+        let bird = { x: 150, y: 200, width: 30, height: 30, velocity: 0 };
+        let gravity = 0.3;     // Gravity strength (adjust to make the game easier/harder)
+        let lift = -8;         // Lift for the bird's jump
+        let pipes = [];
+        let score = 0;
+        let highScore = 0;
+        let pipeGap = 200;     // Gap between top and bottom pipes
+        let pipeWidth = 60;
+
+        // Load sound files
+        const jumpSound = new Audio('jump.mp3');  // Replace with the actual path if needed
+        const scoreSound = new Audio('score.mp3');  // Replace with the actual path if needed
+        const gameOverSound = new Audio('gameover.mp3');  // Replace with the actual path if needed
+
+        // Play jump sound on key press (space or up arrow)
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === ' ') {
+                bird.velocity = lift;
+                jumpSound.play();  // Play jump sound
+            }
+        });
+
+        // Update game state
+        function update() {
+            bird.velocity += gravity;
+            bird.y += bird.velocity;
+
+            if (bird.y > canvas.height) bird.y = canvas.height;
+            if (bird.y < 0) bird.y = 0;
+
+            // Generate pipes
+            if (Math.random() < 0.02) {
+                let pipeHeight = Math.floor(Math.random() * (canvas.height - pipeGap - 50));
+                pipes.push({ x: canvas.width, height: pipeHeight });
+            }
+
+            // Move pipes and check for collisions
+            for (let pipe of pipes) {
+                pipe.x -= 1.5; // Pipe speed (lower value makes it easier)
+
+                // Collision detection
+                if (bird.x < pipe.x + pipeWidth &&
+                    bird.x + bird.width > pipe.x &&
+                    (bird.y < pipe.height || bird.y + bird.height > pipe.height + pipeGap)) {
+                    gameOver();
+                }
+
+                if (pipe.x + pipeWidth < bird.x && !pipe.passed) {
+                    score++;
+                    pipe.passed = true;
+                    scoreSound.play();  // Play score sound when passing a pipe
+                    if (score > highScore) {
+                        highScore = score;
+                    }
+                }
+            }
+
+            pipes = pipes.filter(pipe => pipe.x + pipeWidth > 0);
+        }
+
+        // Draw the game state
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the bird
+            ctx.fillStyle = 'yellow';
+            ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+
+            // Draw the pipes
+            ctx.fillStyle = 'green';
+            for (let pipe of pipes) {
+                ctx.fillRect(pipe.x, 0, pipeWidth, pipe.height);  // Top pipe
+                ctx.fillRect(pipe.x, pipe.height + pipeGap, pipeWidth, canvas.height);  // Bottom pipe
+            }
+
+            // Draw score
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText("Score: " + score, 10, 30);
+            ctx.fillText("High Score: " + highScore, 10, 60);
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Handle game over
+        function gameOver() {
+            gameOverSound.play();  // Play game over sound
+            alert("Game Over! Your Score: " + score);
+            resetGame();
+        }
+
+        // Reset the game
+        function resetGame() {
+            bird.y = 200;
+            bird.velocity = 0;
+            pipes = [];
+            score = 0;
+        }
+
+        gameLoop();  // Start the game loop
+    </script>
+</body>
+</html>
